@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/urban_router.dir/src/main.cpp.o CMakeFiles/urban_router.dir/src/graph.cpp.o CMakeFiles/urban_router.dir/src/router.cpp.o -o urban_router 

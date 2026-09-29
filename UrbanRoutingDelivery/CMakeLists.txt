@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(urban_router
     src/main.cpp
-    src/graph.cpp
+    src/graphs/graph.cpp
     src/router.cpp
 )
 
-target_include_directories(urban_router PRIVATE src)
+target_include_directories(urban_router PRIVATE src src/graphs)

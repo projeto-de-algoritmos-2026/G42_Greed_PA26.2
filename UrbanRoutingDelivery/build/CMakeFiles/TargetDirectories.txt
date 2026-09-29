@@ -1,3 +1,0 @@
-/home/accioly/workspace/unb/PA/G42_grafos_PA26.2/UrbanRoutingDelivery/build/CMakeFiles/urban_router.dir
-/home/accioly/workspace/unb/PA/G42_grafos_PA26.2/UrbanRoutingDelivery/build/CMakeFiles/edit_cache.dir
-/home/accioly/workspace/unb/PA/G42_grafos_PA26.2/UrbanRoutingDelivery/build/CMakeFiles/rebuild_cache.dir
