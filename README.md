@@ -1,111 +1,24 @@
-# G42_grafos_PA26.2
+# UrbanRoutingDelivery - Roteamento e Agendamento Logístico
 
-# UrbanRoutingDelivery - Sistema de Roteamento Logístico do DF
+O **UrbanRoutingDelivery** é um sistema logístico avançado que combina duas abordagens algorítmicas para otimização de entregas. O sistema possui uma arquitetura de módulo duplo: o primeiro focado na roteirização inteligente pela malha urbana, e o segundo focado em maximizar a agenda de trabalho do entregador, garantindo a maior eficiência operacional possível.
 
+## Vídeo de Apresentação
 
+[Link para o vídeo da apresentação](URL_AQUI)
 
-**Disciplina:** Projeto de Algoritmos (PA) - Módulo 1 (Grafos)  
+## Módulo 1: Grafos (Dijkstra)
 
-**Instituição:** Universidade de Brasília (UnB)  
+Implementado em `src/graphs/`, este módulo resolve o problema de deslocamento ao encontrar o menor caminho entre dois pontos na malha urbana. Utilizando o Algoritmo de Dijkstra sobre um grafo ponderado, o sistema calcula a rota com o menor custo (distância) para o entregador.
 
-**Dupla:** Thiago Accioly & Marjorie
+## Módulo 2: Algoritmos Ambiciosos (Interval Scheduling)
 
+Implementado em `src/greedy/`, este módulo lida com a otimização da agenda de entregas (*Interval Scheduling*). Ele recebe dinamicamente uma lista de tarefas, cada uma com horário de início e fim. 
 
+O objetivo é maximizar o número total de entregas feitas por um único entregador, rejeitando tarefas que se sobrepõem. Para isso, utilizamos a estratégia gulosa baseada na heurística **Earliest Finish Time First** (sempre selecionar a tarefa compatível que termina mais cedo). A complexidade de tempo do algoritmo é $O(N \log N)$, impulsionada pela etapa inicial de ordenação das tarefas.
 
----
+## Como rodar o projeto
 
-
-
-##  Sobre o Projeto
-
-O **UrbanRoutingDelivery** é um sistema distribuído de roteamento logístico que calcula a menor distância entre pontos de uma malha urbana (baseada no Distrito Federal). O projeto foi desenvolvido para demonstrar a aplicação prática da Teoria dos Grafos utilizando o **Algoritmo de Dijkstra**.
-
-
-
-A arquitetura do projeto foi dividida em três camadas distintas para garantir a **separação de responsabilidades (Separation of Concerns)**:
-
-1.  **Core (C++):** Motor matemático de alta performance responsável pela estrutura de dados do grafo e cálculo de rotas.
-
-2.  **API (Node.js):** Camada intermediária de comunicação (`child_process`) que expõe os cálculos matemáticos para o mundo web via JSON.
-
-3.  **Frontend (React/Vite):** Interface gráfica moderna com renderização espacial em SVG para visualização interativa do grafo.
-
-
-
-##  Modelagem do Grafo
-
-A estrutura de dados principal implementada em C++ adota os seguintes preceitos acadêmicos:
-
-
-
-*   **Grafo Não-Direcionado (Undirected):** As conexões (arestas) representam vias de mão dupla entre os locais. A função `addUndirectedEdge()` garante que o custo de ida é igual ao de volta.
-
-*   **Grafo Ponderado (Weighted):** Cada aresta possui um peso numérico correspondente à distância em quilômetros entre os nós. O Algoritmo de Dijkstra foi escolhido especificamente para buscar o menor caminho através do somatório destes pesos.
-
-*   **Grafo Desconexo (Disconnected):** Intencionalmente, a malha possui um vértice de grau zero (`Deposito Isolado`). Isso foi implementado para testar e validar o tratamento de exceções (Edge Cases) do algoritmo quando uma rota é matematicamente inalcançável. A classe `Router` atua como domínio, traduzindo strings nominais para identificadores (IDs) compreendidos pela matriz do grafo.
-
-
-
-##  Como Executar Localmente
-
-
-
-**Pré-requisitos:** `CMake`, `g++`, `Node.js` e `npm`.
-
-
-
-### 1. Compilando o Core em C++
-
-Abra o terminal na pasta raiz do `UrbanRoutingDelivery` e execute:
-
-\`\`\`bash
-
-cmake -S . -B build
-
-cmake --build build
-
-\`\`\`
-
-*Isso gerará o executável \`urban_router\` dentro da pasta \`build/\`.*
-
-
-
-### 2. Rodando a API (Node.js)
-
-Em um terminal, inicie o servidor:
-
-\`\`\`bash
-
-cd api
-
-npm install
-
-npm start
-
-\`\`\`
-
-*O servidor rodará na porta 3000.*
-
-
-
-### 3. Rodando o Frontend (React)
-
-Em um **novo** terminal, inicie a interface:
-
-\`\`\`bash
-
-cd frontend
-
-npm install
-
-npm run dev
-
-\`\`\`
-
-*Acesse \`http://localhost:5173\` no seu navegador.*
-
-
-
-##  Apresentação em Vídeo
-
-[Insira o link do YouTube aqui após a gravação]
+**1. Compilando o executável C++**
+Na raiz do repositório, execute os comandos do CMake:
+```bash
+cmake -S UrbanRoutingDelivery -B UrbanRoutingDelivery/build && cmake --build UrbanRoutingDelivery/build
