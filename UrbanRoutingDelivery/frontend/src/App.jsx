@@ -32,6 +32,12 @@ const COORDENADAS = {
   'Deposito Isolado': { x: 87, y: 13 },
 };
 
+function formatarHorario(minutos) {
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+  return `${String(horas).padStart(2, '0')}:${String(resto).padStart(2, '0')}`;
+}
+
 export default function App() {
   const [source, setSource] = useState('');
   const [target, setTarget] = useState('');
@@ -83,6 +89,28 @@ export default function App() {
       : result.path
           .map((nome) => ({ nome, ponto: COORDENADAS[nome] }))
           .filter((parada) => parada.ponto !== undefined);
+
+  const tarefasAgendadas = scheduleData?.scheduled ?? [];
+  const tarefasRejeitadas = scheduleData?.rejected ?? [];
+  const todasTarefas = [...tarefasAgendadas, ...tarefasRejeitadas];
+  const tarefasNaLinhaDoTempo = [
+    ...tarefasAgendadas.map((task) => ({ ...task, status: 'scheduled' })),
+    ...tarefasRejeitadas.map((task) => ({ ...task, status: 'rejected' })),
+  ].sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime);
+  const minutosOcupados = tarefasAgendadas.reduce((total, task) => total + task.endTime - task.startTime, 0);
+  const inicioJanela =
+    todasTarefas.length === 0 ? 0 : Math.floor(Math.min(...todasTarefas.map((task) => task.startTime)) / 60) * 60;
+  const fimJanela =
+    todasTarefas.length === 0 ? 60 : Math.ceil(Math.max(...todasTarefas.map((task) => task.endTime)) / 60) * 60;
+  const duracaoJanela = Math.max(fimJanela - inicioJanela, 60);
+  const marcasHorario = Array.from(
+    { length: Math.floor(duracaoJanela / 60) + 1 },
+    (_, indice) => inicioJanela + indice * 60,
+  );
+
+  function posicaoNaJanela(minuto) {
+    return ((minuto - inicioJanela) / duracaoJanela) * 100;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 lg:flex">
@@ -295,40 +323,217 @@ export default function App() {
           )}
 
           {mode === 'schedule' && (
-            <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/50">
-              <h2 className="text-lg font-medium text-white">Agenda Ótima de Entregas</h2>
-              {scheduleData ? (
-                <div className="mt-6">
-                  <p className="text-sm text-slate-300">
-                    Total Agendado: <span className="font-semibold text-indigo-400">{scheduleData.totalScheduled}</span>
-                  </p>
-
-                  <div className="mt-6 grid gap-8 sm:grid-cols-2">
-                    <div>
-                      <h3 className="text-sm font-medium text-emerald-400">Tarefas Aceitas</h3>
-                      <ul className="mt-4 space-y-3">
-                        {scheduleData.selectedTasks?.map((task, index) => (
-                          <li key={index} className="text-sm text-slate-300">
-                            <span className="font-semibold text-slate-100">{task.id}</span> - {task.destination}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium text-rose-400">Tarefas Rejeitadas</h3>
-                      <ul className="mt-4 space-y-3">
-                        {scheduleData.rejectedTasks?.map((task, index) => (
-                          <li key={index} className="text-sm text-slate-300">
-                            <span className="font-semibold text-slate-100">{task.id}</span> - {task.destination}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+            <div className="mt-8 space-y-6">
+              {scheduleData === null && (
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+                  <p className="text-sm text-slate-500">Carregando dados da agenda...</p>
                 </div>
-              ) : (
-                <p className="mt-4 text-sm text-slate-500">Carregando dados da agenda...</p>
+              )}
+
+              {scheduleData !== null && scheduleData.error && (
+                <div className="rounded-xl border border-red-900/60 bg-red-950/40 p-4">
+                  <p className="text-sm font-medium text-red-200">Não foi possível carregar a agenda</p>
+                  <p className="mt-1 text-sm text-red-300">{scheduleData.error}</p>
+                </div>
+              )}
+
+              {scheduleData !== null && !scheduleData.error && (
+                <>
+                  <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-lg shadow-slate-950/50">
+                    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 px-6 py-5">
+                      <div>
+                        <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Agenda Ótima de Entregas
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-300">
+                          Seleção gulosa por menor horário de término
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Entregas otimizadas
+                        </p>
+                        <p className="mt-1 text-4xl font-semibold leading-none text-white">
+                          {scheduleData.total_scheduled ?? tarefasAgendadas.length}
+                          <span className="ml-1.5 text-base font-medium text-indigo-300">
+                            de {todasTarefas.length}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 divide-x divide-slate-800 border-b border-slate-800">
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-slate-500">Agendadas</p>
+                        <p className="mt-1 text-lg font-semibold text-emerald-400">{tarefasAgendadas.length}</p>
+                      </div>
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-slate-500">Com conflito</p>
+                        <p className="mt-1 text-lg font-semibold text-rose-400">{tarefasRejeitadas.length}</p>
+                      </div>
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-slate-500">Tempo em rota</p>
+                        <p className="mt-1 text-lg font-semibold text-slate-100">{minutosOcupados} min</p>
+                      </div>
+                    </div>
+
+                    {todasTarefas.length > 0 && (
+                      <div className="px-6 py-5">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Linha do tempo
+                        </p>
+
+                        <div className="mt-4 flex">
+                          <div className="w-16 shrink-0" />
+                          <div className="relative h-5 flex-1">
+                            {marcasHorario.map((minuto) => (
+                              <span
+                                key={minuto}
+                                className="absolute -translate-x-1/2 text-[10px] tabular-nums text-slate-500"
+                                style={{ left: `${posicaoNaJanela(minuto)}%` }}
+                              >
+                                {formatarHorario(minuto)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="mt-1 space-y-2">
+                          {tarefasNaLinhaDoTempo.map((task) => (
+                            <div key={`${task.status}-${task.id}`} className="flex items-center">
+                              <span
+                                className={`w-16 shrink-0 truncate pr-2 text-xs font-medium ${task.status === 'scheduled' ? 'text-slate-200' : 'text-slate-500'}`}
+                              >
+                                {task.id}
+                              </span>
+                              <div className="relative h-7 flex-1 rounded bg-slate-950">
+                                {marcasHorario.map((minuto) => (
+                                  <span
+                                    key={minuto}
+                                    className="absolute inset-y-0 w-px bg-slate-800"
+                                    style={{ left: `${posicaoNaJanela(minuto)}%` }}
+                                  />
+                                ))}
+                                <div
+                                  title={`${task.destination} · ${formatarHorario(task.startTime)} – ${formatarHorario(task.endTime)}`}
+                                  className={`absolute inset-y-1 flex items-center overflow-hidden rounded px-2 text-[11px] font-medium ${
+                                    task.status === 'scheduled'
+                                      ? 'bg-indigo-500 text-white'
+                                      : 'border border-dashed border-rose-500/70 bg-rose-500/10 text-rose-300'
+                                  }`}
+                                  style={{
+                                    left: `${posicaoNaJanela(task.startTime)}%`,
+                                    width: `${posicaoNaJanela(task.endTime) - posicaoNaJanela(task.startTime)}%`,
+                                  }}
+                                >
+                                  <span className="truncate">{task.destination}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-5 text-xs text-slate-400">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2.5 w-4 rounded-sm bg-indigo-500" />
+                            Agendada
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <span className="h-2.5 w-4 rounded-sm border border-dashed border-rose-500/70 bg-rose-500/10" />
+                            Rejeitada por sobreposição
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <section>
+                      <div className="flex items-center justify-between">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                          Entregas Agendadas
+                        </h3>
+                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
+                          {tarefasAgendadas.length}
+                        </span>
+                      </div>
+
+                      <ul className="mt-4 space-y-3">
+                        {tarefasAgendadas.map((task) => (
+                          <li
+                            key={task.id}
+                            className="rounded-lg border border-slate-800 border-l-4 border-l-emerald-500 bg-slate-900 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-300">{task.id}</p>
+                                <p className="mt-1 truncate text-sm font-medium text-slate-100">{task.destination}</p>
+                              </div>
+                              <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-300">
+                                {task.endTime - task.startTime} min
+                              </span>
+                            </div>
+                            <p className="mt-3 text-sm tabular-nums text-slate-300">
+                              {formatarHorario(task.startTime)}
+                              <span className="mx-2 text-slate-600">→</span>
+                              {formatarHorario(task.endTime)}
+                            </p>
+                          </li>
+                        ))}
+                        {tarefasAgendadas.length === 0 && (
+                          <li className="rounded-lg border border-dashed border-slate-800 p-4 text-sm text-slate-500">
+                            Nenhuma entrega agendada.
+                          </li>
+                        )}
+                      </ul>
+                    </section>
+
+                    <section>
+                      <div className="flex items-center justify-between">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-rose-400">
+                          <span className="h-2 w-2 rounded-full bg-rose-400" />
+                          Entregas com Conflito
+                        </h3>
+                        <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-300">
+                          {tarefasRejeitadas.length}
+                        </span>
+                      </div>
+
+                      <ul className="mt-4 space-y-3">
+                        {tarefasRejeitadas.map((task) => (
+                          <li
+                            key={task.id}
+                            className="rounded-lg border border-slate-800 border-l-4 border-l-rose-500/70 bg-slate-900/60 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{task.id}</p>
+                                <p className="mt-1 truncate text-sm font-medium text-slate-400 line-through decoration-rose-500/60">
+                                  {task.destination}
+                                </p>
+                              </div>
+                              <span className="shrink-0 rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-slate-400">
+                                {task.endTime - task.startTime} min
+                              </span>
+                            </div>
+                            <p className="mt-3 text-sm tabular-nums text-slate-500">
+                              {formatarHorario(task.startTime)}
+                              <span className="mx-2 text-slate-700">→</span>
+                              {formatarHorario(task.endTime)}
+                            </p>
+                            <p className="mt-2 text-xs text-rose-300/80">Sobrepõe uma entrega já agendada</p>
+                          </li>
+                        ))}
+                        {tarefasRejeitadas.length === 0 && (
+                          <li className="rounded-lg border border-dashed border-slate-800 p-4 text-sm text-slate-500">
+                            Nenhum conflito de horário.
+                          </li>
+                        )}
+                      </ul>
+                    </section>
+                  </div>
+                </>
               )}
             </div>
           )}
