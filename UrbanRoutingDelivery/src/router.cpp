@@ -55,6 +55,23 @@ std::string buildErrorJson(const std::string& message) {
     return "{\"status\": \"error\", \"message\": \"" + escapeJsonString(message) + "\"}";
 }
 
+std::string serializeTasks(const std::vector<DeliveryTask>& tasks) {
+    std::ostringstream stream;
+    stream << "[";
+    for (std::size_t index = 0; index < tasks.size(); ++index) {
+        if (index > 0) {
+            stream << ", ";
+        }
+        const DeliveryTask& task = tasks[index];
+        stream << "{\"id\": \"" << escapeJsonString(task.id)
+               << "\", \"destination\": \"" << escapeJsonString(task.destination)
+               << "\", \"startTime\": " << task.startTime
+               << ", \"endTime\": " << task.endTime << "}";
+    }
+    stream << "]";
+    return stream.str();
+}
+
 }
 
 Router::Router(int maxLocations)
@@ -122,4 +139,22 @@ std::string Router::getShortestPathJson(const std::string& source, const std::st
     }
     stream << "], \"distance\": " << formatNumber(result.totalCost) << "}";
     return stream.str();
+}
+
+void Router::addDeliveryTask(const std::string& id, const std::string& destination, int startTime, int endTime) {
+    scheduler.addTask(id, destination, startTime, endTime);
+}
+
+std::string Router::getOptimalScheduleJson() {
+    try {
+        ScheduleResult result = scheduler.calculateOptimalSchedule();
+
+        std::ostringstream stream;
+        stream << "{\"status\": \"success\", \"total_scheduled\": " << result.totalScheduled
+               << ", \"scheduled\": " << serializeTasks(result.selectedTasks)
+               << ", \"rejected\": " << serializeTasks(result.rejectedTasks) << "}";
+        return stream.str();
+    } catch (const std::exception& error) {
+        return buildErrorJson(error.what());
+    }
 }
