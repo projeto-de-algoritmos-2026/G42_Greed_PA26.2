@@ -1,6 +1,6 @@
 # UrbanRoutingDelivery - Roteamento e Agendamento Logístico
 
-O **UrbanRoutingDelivery** é um sistema logístico duplo e robusto projetado para solucionar problemas complexos do mundo real. Nossa solução integra roteamento inteligente e otimização de agenda de trabalho, resolvendo desafios de Roteamento através da Teoria dos Grafos e problemas de Agendamento utilizando Algoritmos Ambiciosos (Greedy).
+O **UrbanRoutingDelivery** é um sistema logístico duplo projetado para solucionar problemas complexos de otimização operacional. O sistema une com eficiência a resolução de problemas de Roteamento, utilizando a Teoria dos Grafos, e problemas de Agendamento, através de Algoritmos Ambiciosos (Greedy), fornecendo uma solução computacional completa para rotas e entregas urbanas.
 
 ## Vídeo de Apresentação
 
@@ -8,25 +8,43 @@ O **UrbanRoutingDelivery** é um sistema logístico duplo e robusto projetado pa
 
 ## Arquitetura do Sistema
 
-Nossa aplicação foi desenvolvida utilizando uma arquitetura Full-Stack moderna e dividida em três camadas fortemente integradas:
-- **Frontend (React + Tailwind CSS):** Interface gráfica interativa. O Frontend envia requisições dinâmicas para o Backend para consultar rotas e agendamentos.
-- **API Backend (Express / Node.js):** Camada intermediária de comunicação. Recebe as requisições HTTP do Frontend e, via `child_process`, executa o motor de cálculos matemático.
-- **Motor de Roteamento (C++17):** O núcleo de alta performance estruturado em binário C++ encapsula as estruturas de dados complexas e a lógica bruta dos algoritmos.
+Nossa aplicação adota uma arquitetura Full-Stack moderna e modular, dividida em três camadas altamente integradas:
+* **Frontend (React + Tailwind CSS):** Interface gráfica interativa que permite a visualização da malha urbana, do trajeto e da linha do tempo da agenda. O Frontend envia requisições dinâmicas à API para consulta de rotas e agendamentos.
+* **API Backend (Express / Node.js):** Camada intermediária de comunicação. É responsável por orquestrar as requisições HTTP do Frontend e acionar o motor de cálculos matemático através da interface `child_process`.
+* **Motor de Roteamento (C++17):** O núcleo de alta performance estruturado em um binário C++ que encapsula as estruturas de dados e executa a lógica bruta dos algoritmos.
 
 ## Módulo 1: Grafos (Dijkstra)
 
-O módulo de Roteamento resolve o problema clássico de deslocamento, encontrando o menor caminho entre dois pontos dentro de uma malha urbana. Utilizando o Algoritmo de Dijkstra aplicado sobre um grafo ponderado, este módulo garante a descoberta da rota de menor custo, viabilizando as entregas no menor tempo e distância possíveis.
+O módulo de Roteamento resolve o problema clássico de deslocamento na malha urbana. Implementando o **Algoritmo de Dijkstra** sobre um grafo ponderado, este módulo é capaz de encontrar o menor caminho (a rota de menor custo e distância) entre dois pontos, viabilizando rotas eficientes para o entregador.
 
 ## Módulo 2: Algoritmos Ambiciosos (Interval Scheduling)
 
-O módulo de Agendamento aborda o problema de maximizar o número de entregas realizadas por um único entregador sem que os horários se sobreponham. 
-Para isso, aplicamos a modelagem de *Interval Scheduling* empregando a heurística gulosa **Earliest Finish Time First** (sempre escolhemos a tarefa compatível que termina mais cedo). Essa estratégia garante uma solução ótima global. A complexidade de tempo do algoritmo é de **$O(N \log N)$**, determinada predominantemente pela etapa inicial de ordenação (sorting) cronológica de todas as tarefas de entrega disponíveis.
+O módulo de Agendamento foca em um desafio logístico crucial: maximizar o número de entregas realizadas por um único entregador sem que haja sobreposição de horários em sua agenda. 
+
+Para solucionar isso, modelamos a situação através do problema de *Interval Scheduling* e utilizamos a heurística gulosa **Earliest Finish Time First** (sempre escolhemos a tarefa compatível que termina mais cedo). Essa abordagem garante matematicamente uma solução ótima global. A complexidade de tempo do algoritmo é de **$O(N \log N)$**, ditada pela etapa inicial obrigatória de ordenação cronológica de todas as tarefas.
 
 ## Guia de Execução
 
-Siga rigorosamente os 3 passos abaixo para iniciar a aplicação completa em seu ambiente local.
+Siga rigorosamente as 3 etapas abaixo para compilar e iniciar o projeto completo em seu ambiente local.
 
 ### Passo 1: Compilar o Motor C++
-Na raiz do projeto, gere os arquivos de compilação e faça o build do executável:
+Na raiz do repositório, gere os arquivos de configuração e faça a compilação do binário:
 ```bash
 cmake -S UrbanRoutingDelivery -B UrbanRoutingDelivery/build && cmake --build UrbanRoutingDelivery/build
+```
+
+### Passo 2: Iniciar a API (Backend)
+Navegue até a pasta da API, instale as dependências e inicie o servidor (ele rodará na porta `3000`):
+```bash
+cd UrbanRoutingDelivery/api
+npm install
+npm start
+```
+
+### Passo 3: Iniciar o Frontend
+Em um novo terminal (mantendo a API rodando no primeiro), navegue até a pasta do Frontend, instale as dependências e inicie a interface:
+```bash
+cd UrbanRoutingDelivery/frontend
+npm install
+npm run dev
+```
