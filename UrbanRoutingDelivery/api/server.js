@@ -37,4 +37,25 @@ app.get('/api/route', (req, res) => {
     });
 });
 
+app.get('/api/schedule', (req, res) => {
+    exec('../build/urban_router --schedule', (error, stdout, stderr) => {
+        if (error) {
+            return res.status(500).json({
+                error: error.message,
+                stderr: stderr
+            });
+        }
+
+        try {
+            const parsedOutput = JSON.parse(stdout);
+            res.json(parsedOutput);
+        } catch (parseError) {
+            res.status(500).json({
+                error: parseError.message,
+                rawOutput: stdout
+            });
+        }
+    });
+});
+
 app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));
