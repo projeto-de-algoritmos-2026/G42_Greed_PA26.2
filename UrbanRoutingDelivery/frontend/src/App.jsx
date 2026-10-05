@@ -38,8 +38,20 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState('route');
+  const [scheduleData, setScheduleData] = useState(null);
 
   const isSubmitDisabled = loading || source.trim() === '' || target.trim() === '';
+
+  async function fetchSchedule() {
+    try {
+      const response = await fetch('http://localhost:3000/api/schedule');
+      const data = await response.json();
+      setScheduleData(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -118,149 +130,207 @@ export default function App() {
               Sistema de Roteamento Logístico
             </h1>
             <p className="mt-1 text-sm text-slate-400">
-              Consulte o trajeto de menor distância entre dois pontos da malha.
+              Consulte o trajeto de menor distância ou a agenda de entregas.
             </p>
           </header>
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/50"
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="source" className="block text-sm font-medium text-slate-300">
-                  Origem
-                </label>
-                <input
-                  id="source"
-                  type="text"
-                  value={source}
-                  onChange={(event) => setSource(event.target.value)}
-                  placeholder="Centro de Distribuicao"
-                  className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="target" className="block text-sm font-medium text-slate-300">
-                  Destino
-                </label>
-                <input
-                  id="target"
-                  type="text"
-                  value={target}
-                  onChange={(event) => setTarget(event.target.value)}
-                  placeholder="Samambaia"
-                  className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                />
-              </div>
-            </div>
-
+          <div className="mt-6 flex gap-4">
             <button
-              type="submit"
-              disabled={isSubmitDisabled}
-              className="mt-6 rounded-md bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+              onClick={() => setMode('route')}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${mode === 'route' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
             >
-              {loading ? 'Calculando...' : 'Calcular Rota'}
+              Mapa de Rotas
             </button>
-          </form>
+            <button
+              onClick={() => { setMode('schedule'); fetchSchedule(); }}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${mode === 'schedule' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            >
+              Agenda do Entregador
+            </button>
+          </div>
 
-          {error !== '' && (
-            <div className="mt-6 rounded-xl border border-red-900/60 bg-red-950/40 p-4">
-              <p className="text-sm font-medium text-red-200">Não foi possível traçar a rota</p>
-              <p className="mt-1 text-sm text-red-300">{error}</p>
-            </div>
+          {mode === 'route' && (
+            <>
+              <form
+                onSubmit={handleSubmit}
+                className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/50"
+              >
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="source" className="block text-sm font-medium text-slate-300">
+                      Origem
+                    </label>
+                    <input
+                      id="source"
+                      type="text"
+                      value={source}
+                      onChange={(event) => setSource(event.target.value)}
+                      placeholder="Centro de Distribuicao"
+                      className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="target" className="block text-sm font-medium text-slate-300">
+                      Destino
+                    </label>
+                    <input
+                      id="target"
+                      type="text"
+                      value={target}
+                      onChange={(event) => setTarget(event.target.value)}
+                      placeholder="Samambaia"
+                      className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className="mt-6 rounded-md bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+                >
+                  {loading ? 'Calculando...' : 'Calcular Rota'}
+                </button>
+              </form>
+
+              {error !== '' && (
+                <div className="mt-6 rounded-xl border border-red-900/60 bg-red-950/40 p-4">
+                  <p className="text-sm font-medium text-red-200">Não foi possível traçar a rota</p>
+                  <p className="mt-1 text-sm text-red-300">{error}</p>
+                </div>
+              )}
+
+              {result !== null && (
+                <section className="mt-6 overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-lg shadow-slate-950/50">
+                  <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 bg-slate-900/60 px-6 py-5">
+                    <div>
+                      <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                        Rota Encontrada
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-300">
+                        {result.path.length} parada{result.path.length === 1 ? '' : 's'} no trajeto
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                        Distância total
+                      </p>
+                      <p className="mt-1 text-4xl font-semibold leading-none text-white">
+                        {Number(result.distance).toFixed(1)}
+                        <span className="ml-1.5 text-base font-medium text-indigo-300">km</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-4">
+                    <div className="aspect-square w-full rounded-lg border border-slate-800 bg-slate-950">
+                      <svg viewBox="0 0 100 100" className="h-full w-full" role="img">
+                        <g>
+                          {MALHA_URBANA.map((nome) => (
+                            <g key={nome}>
+                              <circle
+                                cx={COORDENADAS[nome].x}
+                                cy={COORDENADAS[nome].y}
+                                r="1.5"
+                                fill="#334155"
+                              />
+                              {!result.path.includes(nome) && (
+                                <text
+                                  x={COORDENADAS[nome].x}
+                                  y={COORDENADAS[nome].y + 4.2}
+                                  textAnchor="middle"
+                                  fontSize="2.3"
+                                  fill="#64748b"
+                                >
+                                  {nome}
+                                </text>
+                              )}
+                            </g>
+                          ))}
+                        </g>
+
+                        <g stroke="#6366f1" strokeWidth="1.1" strokeLinecap="round">
+                          {rota.slice(1).map((parada, index) => (
+                            <line
+                              key={`${rota[index].nome}-${parada.nome}`}
+                              x1={rota[index].ponto.x}
+                              y1={rota[index].ponto.y}
+                              x2={parada.ponto.x}
+                              y2={parada.ponto.y}
+                            />
+                          ))}
+                        </g>
+
+                        <g>
+                          {rota.map((parada, index) => (
+                            <g key={`${parada.nome}-${index}`}>
+                              <circle
+                                cx={parada.ponto.x}
+                                cy={parada.ponto.y}
+                                r="2.6"
+                                fill="#818cf8"
+                                stroke="#0f172a"
+                                strokeWidth="0.8"
+                              />
+                              <text
+                                x={parada.ponto.x}
+                                y={parada.ponto.y + 5.4}
+                                textAnchor="middle"
+                                fontSize="2.6"
+                                fontWeight="600"
+                                fill="#e2e8f0"
+                              >
+                                {parada.nome}
+                              </text>
+                            </g>
+                          ))}
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
           )}
 
-          {result !== null && (
-            <section className="mt-6 overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-lg shadow-slate-950/50">
-              <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 bg-slate-900/60 px-6 py-5">
-                <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    Rota Encontrada
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-300">
-                    {result.path.length} parada{result.path.length === 1 ? '' : 's'} no trajeto
+          {mode === 'schedule' && (
+            <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/50">
+              <h2 className="text-lg font-medium text-white">Agenda Ótima de Entregas</h2>
+              {scheduleData ? (
+                <div className="mt-6">
+                  <p className="text-sm text-slate-300">
+                    Total Agendado: <span className="font-semibold text-indigo-400">{scheduleData.totalScheduled}</span>
                   </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    Distância total
-                  </p>
-                  <p className="mt-1 text-4xl font-semibold leading-none text-white">
-                    {Number(result.distance).toFixed(1)}
-                    <span className="ml-1.5 text-base font-medium text-indigo-300">km</span>
-                  </p>
-                </div>
-              </div>
 
-              <div className="px-4 py-4">
-                <div className="aspect-square w-full rounded-lg border border-slate-800 bg-slate-950">
-                  <svg viewBox="0 0 100 100" className="h-full w-full" role="img">
-                    <g>
-                      {MALHA_URBANA.map((nome) => (
-                        <g key={nome}>
-                          <circle
-                            cx={COORDENADAS[nome].x}
-                            cy={COORDENADAS[nome].y}
-                            r="1.5"
-                            fill="#334155"
-                          />
-                          {!result.path.includes(nome) && (
-                            <text
-                              x={COORDENADAS[nome].x}
-                              y={COORDENADAS[nome].y + 4.2}
-                              textAnchor="middle"
-                              fontSize="2.3"
-                              fill="#64748b"
-                            >
-                              {nome}
-                            </text>
-                          )}
-                        </g>
-                      ))}
-                    </g>
+                  <div className="mt-6 grid gap-8 sm:grid-cols-2">
+                    <div>
+                      <h3 className="text-sm font-medium text-emerald-400">Tarefas Aceitas</h3>
+                      <ul className="mt-4 space-y-3">
+                        {scheduleData.selectedTasks?.map((task, index) => (
+                          <li key={index} className="text-sm text-slate-300">
+                            <span className="font-semibold text-slate-100">{task.id}</span> - {task.destination}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
-                    <g stroke="#6366f1" strokeWidth="1.1" strokeLinecap="round">
-                      {rota.slice(1).map((parada, index) => (
-                        <line
-                          key={`${rota[index].nome}-${parada.nome}`}
-                          x1={rota[index].ponto.x}
-                          y1={rota[index].ponto.y}
-                          x2={parada.ponto.x}
-                          y2={parada.ponto.y}
-                        />
-                      ))}
-                    </g>
-
-                    <g>
-                      {rota.map((parada, index) => (
-                        <g key={`${parada.nome}-${index}`}>
-                          <circle
-                            cx={parada.ponto.x}
-                            cy={parada.ponto.y}
-                            r="2.6"
-                            fill="#818cf8"
-                            stroke="#0f172a"
-                            strokeWidth="0.8"
-                          />
-                          <text
-                            x={parada.ponto.x}
-                            y={parada.ponto.y + 5.4}
-                            textAnchor="middle"
-                            fontSize="2.6"
-                            fontWeight="600"
-                            fill="#e2e8f0"
-                          >
-                            {parada.nome}
-                          </text>
-                        </g>
-                      ))}
-                    </g>
-                  </svg>
+                    <div>
+                      <h3 className="text-sm font-medium text-rose-400">Tarefas Rejeitadas</h3>
+                      <ul className="mt-4 space-y-3">
+                        {scheduleData.rejectedTasks?.map((task, index) => (
+                          <li key={index} className="text-sm text-slate-300">
+                            <span className="font-semibold text-slate-100">{task.id}</span> - {task.destination}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </section>
+              ) : (
+                <p className="mt-4 text-sm text-slate-500">Carregando dados da agenda...</p>
+              )}
+            </div>
           )}
         </div>
       </main>
