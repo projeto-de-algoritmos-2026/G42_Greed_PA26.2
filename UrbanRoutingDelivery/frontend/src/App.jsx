@@ -38,6 +38,11 @@ function formatarHorario(minutos) {
   return `${String(horas).padStart(2, '0')}:${String(resto).padStart(2, '0')}`;
 }
 
+function converterParaMinutos(horario) {
+  const [horas, minutos] = horario.split(':').map(Number);
+  return horas * 60 + minutos;
+}
+
 export default function App() {
   const [source, setSource] = useState('');
   const [target, setTarget] = useState('');
@@ -46,17 +51,74 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('route');
   const [scheduleData, setScheduleData] = useState(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [customTasks, setCustomTasks] = useState([]);
+  const [taskId, setTaskId] = useState('');
+  const [taskDestination, setTaskDestination] = useState('');
+  const [taskStart, setTaskStart] = useState('');
+  const [taskEnd, setTaskEnd] = useState('');
+  const [taskError, setTaskError] = useState('');
 
   const isSubmitDisabled = loading || source.trim() === '' || target.trim() === '';
 
   async function fetchSchedule() {
+    setScheduleLoading(true);
+
     try {
-      const response = await fetch('http://localhost:3000/api/schedule');
+      const response = await fetch('http://localhost:3000/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: customTasks }),
+      });
       const data = await response.json();
+
+      if (!response.ok || data.status === 'error') {
+        setScheduleData({ error: data.error || data.message || 'Não foi possível calcular a agenda.' });
+        return;
+      }
+
       setScheduleData(data);
     } catch (err) {
-      console.error(err);
+      setScheduleData({ error: 'Não foi possível contatar o serviço de agendamento.' });
+    } finally {
+      setScheduleLoading(false);
     }
+  }
+
+  function handleAddTask(event) {
+    event.preventDefault();
+
+    const id = taskId.trim();
+    const destination = taskDestination.trim();
+
+    if (id === '' || destination === '' || taskStart === '' || taskEnd === '') {
+      setTaskError('Preencha todos os campos da entrega.');
+      return;
+    }
+
+    const startTime = converterParaMinutos(taskStart);
+    const endTime = converterParaMinutos(taskEnd);
+
+    if (endTime <= startTime) {
+      setTaskError('O horário de fim deve ser posterior ao de início.');
+      return;
+    }
+
+    if (customTasks.some((task) => task.id === id)) {
+      setTaskError(`Já existe uma entrega com o ID ${id}.`);
+      return;
+    }
+
+    setCustomTasks([...customTasks, { id, destination, startTime, endTime }]);
+    setTaskId('');
+    setTaskDestination('');
+    setTaskStart('');
+    setTaskEnd('');
+    setTaskError('');
+  }
+
+  function handleRemoveTask(id) {
+    setCustomTasks(customTasks.filter((task) => task.id !== id));
   }
 
   async function handleSubmit(event) {
@@ -324,6 +386,133 @@ export default function App() {
 
           {mode === 'schedule' && (
             <div className="mt-8 space-y-6">
+              <form
+                onSubmit={handleAddTask}
+                className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/50"
+              >
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                  Nova Entrega
+                </h2>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <label htmlFor="task-id" className="block text-sm font-medium text-slate-300">
+                      ID
+                    </label>
+                    <input
+                      id="task-id"
+                      type="text"
+                      value={taskId}
+                      onChange={(event) => setTaskId(event.target.value)}
+                      placeholder="T1"
+                      className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="task-destination" className="block text-sm font-medium text-slate-300">
+                      Destino
+                    </label>
+                    <input
+                      id="task-destination"
+                      type="text"
+                      list="destinos-malha"
+                      value={taskDestination}
+                      onChange={(event) => setTaskDestination(event.target.value)}
+                      placeholder="Asa Sul"
+                      className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                    />
+                    <datalist id="destinos-malha">
+                      {MALHA_URBANA.map((location) => (
+                        <option key={location} value={location} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  <div>
+                    <label htmlFor="task-start" className="block text-sm font-medium text-slate-300">
+                      Hora Início
+                    </label>
+                    <input
+                      id="task-start"
+                      type="time"
+                      value={taskStart}
+                      onChange={(event) => setTaskStart(event.target.value)}
+                      className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition [color-scheme:dark] focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="task-end" className="block text-sm font-medium text-slate-300">
+                      Hora Fim
+                    </label>
+                    <input
+                      id="task-end"
+                      type="time"
+                      value={taskEnd}
+                      onChange={(event) => setTaskEnd(event.target.value)}
+                      className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition [color-scheme:dark] focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+                </div>
+
+                {taskError !== '' && <p className="mt-4 text-sm text-rose-300">{taskError}</p>}
+
+                <button
+                  type="submit"
+                  className="mt-5 rounded-md bg-slate-800 px-5 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-slate-700"
+                >
+                  Adicionar à Lista
+                </button>
+
+                <div className="mt-6 border-t border-slate-800 pt-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      Pendentes para cálculo
+                    </p>
+                    <span className="text-xs text-slate-500">{customTasks.length}</span>
+                  </div>
+
+                  {customTasks.length === 0 ? (
+                    <p className="mt-3 text-sm text-slate-500">
+                      Nenhuma entrega adicionada. O cálculo usará a agenda padrão.
+                    </p>
+                  ) : (
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {customTasks.map((task) => (
+                        <li
+                          key={task.id}
+                          className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800 py-1 pl-3 pr-1 text-xs text-slate-300"
+                        >
+                          <span className="font-semibold text-indigo-300">{task.id}</span>
+                          <span>{task.destination}</span>
+                          <span className="tabular-nums text-slate-500">
+                            {formatarHorario(task.startTime)}–{formatarHorario(task.endTime)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTask(task.id)}
+                            aria-label={`Remover ${task.id}`}
+                            className="flex h-5 w-5 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-700 hover:text-slate-200"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fetchSchedule}
+                  disabled={scheduleLoading}
+                  className="mt-6 rounded-md bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+                >
+                  {scheduleLoading ? 'Calculando...' : 'Calcular Agenda Ótima'}
+                </button>
+              </form>
+
               {scheduleData === null && (
                 <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
                   <p className="text-sm text-slate-500">Carregando dados da agenda...</p>

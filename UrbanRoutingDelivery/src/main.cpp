@@ -1,5 +1,6 @@
 #include "router.hpp"
 
+#include <exception>
 #include <iostream>
 #include <string>
 
@@ -7,12 +8,29 @@ int main(int argc, char* argv[]) {
     if (argc >= 2 && std::string(argv[1]) == "--schedule") {
         Router router(100);
 
-        router.addDeliveryTask("T1", "Taguatinga", 480, 540);
-        router.addDeliveryTask("T2", "Ceilandia", 500, 560);
-        router.addDeliveryTask("T3", "Plano Piloto", 550, 610);
-        router.addDeliveryTask("T4", "Guara", 600, 660);
-        router.addDeliveryTask("T5", "Aguas Claras", 620, 680);
-        router.addDeliveryTask("T6", "Asa Sul", 690, 750);
+        if (argc > 2) {
+            if ((argc - 2) % 4 != 0) {
+                std::cout << "{\"status\": \"error\", \"message\": \"Tasks must be provided as <id> <destination> <start> <end>\"}"
+                          << std::endl;
+                return 1;
+            }
+
+            try {
+                for (int i = 2; i + 3 < argc; i += 4) {
+                    router.addDeliveryTask(argv[i], argv[i + 1], std::stoi(argv[i + 2]), std::stoi(argv[i + 3]));
+                }
+            } catch (const std::exception&) {
+                std::cout << "{\"status\": \"error\", \"message\": \"Invalid task arguments\"}" << std::endl;
+                return 1;
+            }
+        } else {
+            router.addDeliveryTask("T1", "Taguatinga", 480, 540);
+            router.addDeliveryTask("T2", "Ceilandia", 500, 560);
+            router.addDeliveryTask("T3", "Plano Piloto", 550, 610);
+            router.addDeliveryTask("T4", "Guara", 600, 660);
+            router.addDeliveryTask("T5", "Aguas Claras", 620, 680);
+            router.addDeliveryTask("T6", "Asa Sul", 690, 750);
+        }
 
         std::cout << router.getOptimalScheduleJson() << std::endl;
         return 0;
