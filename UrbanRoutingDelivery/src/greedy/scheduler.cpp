@@ -27,18 +27,17 @@ ScheduleResult DeliveryScheduler::calculateOptimalSchedule() const {
     });
 
     ScheduleResult result;
-    result.totalScheduled = 0;
     int currentEndTime = -1;
 
     for (const auto& task : localTasks) {
         if (task.startTime >= currentEndTime) {
             result.selectedTasks.push_back(task);
             currentEndTime = task.endTime;
-            result.totalScheduled++;
         } else {
             result.rejectedTasks.push_back(task);
         }
     }
 
+    result.totalScheduled = static_cast<int>(result.selectedTasks.size());
     return result;
 }
