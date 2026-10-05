@@ -4,6 +4,20 @@
 #include <string>
 
 int main(int argc, char* argv[]) {
+    if (argc >= 2 && std::string(argv[1]) == "--schedule") {
+        Router router(100);
+
+        router.addDeliveryTask("T1", "Taguatinga", 480, 540);
+        router.addDeliveryTask("T2", "Ceilandia", 500, 560);
+        router.addDeliveryTask("T3", "Plano Piloto", 550, 610);
+        router.addDeliveryTask("T4", "Guara", 600, 660);
+        router.addDeliveryTask("T5", "Aguas Claras", 620, 680);
+        router.addDeliveryTask("T6", "Asa Sul", 690, 750);
+
+        std::cout << router.getOptimalScheduleJson() << std::endl;
+        return 0;
+    }
+
     Router router(16);
 
     router.addRoute("Centro de Distribuicao", "Asa Norte", 8.5);
